@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
 const REFERENCE_PREFIX = process.env.NEXT_PUBLIC_REFERENCE_PREFIX || 'WALLET-';
+const BASE_URL = process.env.NEXTAUTH_URL || 'http://localhost:3000';
 
 export async function POST(request) {
   try {
@@ -39,7 +40,7 @@ export async function POST(request) {
     const walletId = walletResult.rows[0].id;
     const reference = `${REFERENCE_PREFIX}${decoded.userId}-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     
-    // Create pending transaction record (using transaction_type, not type)
+    // Create pending transaction record
     await query(
       `INSERT INTO wallet_transactions (wallet_id, transaction_type, amount, balance_after, description, reference, status)
        VALUES ($1, 'credit', $2, $3, 'Wallet funding - pending', $4, 'pending')`,
@@ -61,7 +62,7 @@ export async function POST(request) {
           user_id: decoded.userId,
           type: 'wallet_funding'
         },
-        callback_url: `${process.env.NEXTAUTH_URL}/api/payment/verify`,
+        callback_url: `${BASE_URL}/api/payment/verify`,
       }),
     });
     
