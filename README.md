@@ -1,36 +1,133 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 💳 Digital Wallet System (Nigeria)
 
-## Getting Started
+A complete digital wallet system built with Next.js that allows users to fund their wallets via Paystack, send money to other users, and track all transactions. Designed for Nigerian users with NGN currency support.
 
-First, run the development server:
+## 🚀 Live Demo
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+[View Live Demo](https://your-digital-wallet.vercel.app)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ✨ Features
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### User Features
+- **Wallet Dashboard** - View balance and recent transactions
+- **Fund Wallet** - Add money using Paystack (₦100 minimum)
+- **Send Money** - Transfer instantly to other users
+- **Transaction History** - View all wallet activities
+- **Secure Authentication** - JWT-based auth with HTTP-only cookies
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Technical Features
+- **Real-time Balance Updates** - Instant updates after transactions
+- **Transaction Tracking** - Complete audit trail of all activities
+- **Paystack Integration** - Secure payment processing
+- **Webhook Support** - Automatic wallet crediting on successful payment
+- **Nigerian Context** - ₦ Naira currency, Nigerian business logic
 
-## Learn More
+## 🛠️ Technology Stack
 
-To learn more about Next.js, take a look at the following resources:
+| Category | Technology |
+|----------|------------|
+| **Frontend** | Next.js 16 (App Router) |
+| **Backend** | Next.js API Routes |
+| **Database** | PostgreSQL (Neon) |
+| **Authentication** | JWT + HTTP-only Cookies |
+| **Payments** | Paystack |
+| **Styling** | Custom CSS (Playpen Sans font) |
+| **Deployment** | Vercel |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📊 Database Schema
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```sql
+-- Users table (extends auth system)
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    role VARCHAR(50) DEFAULT 'user',
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-## Deploy on Vercel
+-- Wallets table
+CREATE TABLE wallets (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) UNIQUE,
+    balance DECIMAL(10,2) DEFAULT 0,
+    currency VARCHAR(3) DEFAULT 'NGN',
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+-- Wallet transactions
+CREATE TABLE wallet_transactions (
+    id SERIAL PRIMARY KEY,
+    wallet_id INTEGER REFERENCES wallets(id),
+    transaction_type VARCHAR(20) CHECK (transaction_type IN ('credit', 'debit')),
+    amount DECIMAL(10,2) NOT NULL,
+    balance_after DECIMAL(10,2) NOT NULL,
+    description TEXT,
+    reference VARCHAR(255) UNIQUE,
+    status VARCHAR(20) DEFAULT 'completed',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+-- Transfers between users
+CREATE TABLE transfers (
+    id SERIAL PRIMARY KEY,
+    reference VARCHAR(255) UNIQUE,
+    from_user_id INTEGER REFERENCES users(id),
+    to_user_id INTEGER REFERENCES users(id),
+    from_wallet_id INTEGER REFERENCES wallets(id),
+    to_wallet_id INTEGER REFERENCES wallets(id),
+    amount DECIMAL(10,2) NOT NULL,
+    note TEXT,
+    status VARCHAR(20) DEFAULT 'completed',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Auto-create wallet for new users
+CREATE OR REPLACE FUNCTION create_wallet_for_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO wallets (user_id, balance)
+    VALUES (NEW.id, 0);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_create_wallet
+AFTER INSERT ON users
+FOR EACH ROW
+EXECUTE FUNCTION create_wallet_for_user();
+
+# Clone the repository
+git clone https://github.com/Musa-Battah/digital-wallet.git
+cd digital-wallet
+
+# Install dependencies
+npm install
+
+# Create environment file
+cp .env.example .env.local
+
+# Database (Neon)
+PGHOST=your_neon_host
+PGPORT=5432
+PGDATABASE=neondb
+PGUSER=your_user
+PGPASSWORD=your_password
+PGSSLMODE=require
+
+# JWT Authentication
+JWT_SECRET=your_super_secret_key
+
+# Paystack (Test Keys)
+NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_test_xxx
+PAYSTACK_SECRET_KEY=sk_test_xxx
+
+# App URL
+NEXTAUTH_URL=http://localhost:3000
+
+# Reference Prefix for Webhook Routing
+NEXT_PUBLIC_REFERENCE_PREFIX=WALLET-
