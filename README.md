@@ -4,7 +4,7 @@ A complete digital wallet system built with Next.js that allows users to fund th
 
 ## 🚀 Live Demo
 
-[View Live Demo](https://your-digital-wallet.vercel.app)
+[View Live Demo](https://digital-wallet-swart-chi.vercel.app/)
 
 ## ✨ Features
 
