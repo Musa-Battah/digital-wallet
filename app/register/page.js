@@ -52,7 +52,6 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (res.ok) {
-        // Wallet is auto-created by database trigger
         router.push('/login?registered=true');
       } else {
         setError(data.error || 'Registration failed');
